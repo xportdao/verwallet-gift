@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VerWallet: подарок</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { color-scheme: light dark; --bg: #f4f5f7; --ink: #15171a; --muted: #5d636b; --card: #fff; --accent: #2f6bff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #131416; --ink: #eceef1; --muted: #9aa1aa; --card: #1d1f23; --accent: #6f9bff; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 -apple-system, system-ui, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 22px; margin: 4px 0 12px; }
+  .card { background: var(--card); border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
+  .row span:first-child { color: var(--muted); }
+  code { word-break: break-all; }
+  button { width: 100%; min-height: 50px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; margin-top: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Проба страницы подарка</h1>
+  <div class="card" id="out">Проверяем…</div>
+  <button type="button" id="go">Открыть VerWallet</button>
+</main>
+<script>
+// Probe for VerWallet (plan step 2.2, variant 3, 28.10.2026): a second Mini App of @Verwallet_bot on GitHub Pages.
+// It shows what arrived, whether it sees the main app's Telegram CloudStorage, writes a test item, and opens
+// VerWallet. Nothing is sent anywhere; the start parameter of a probe link is a test value, not a secret.
+(function () {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const out = document.getElementById('out');
+  const row = (name, value) => `<div class="row"><span>${name}</span><code>${String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))}</code></div>`;
+  const main = 'https://t.me/Verwallet_bot?startapp=probe_after';
+  const open = () => { try { tg.openTelegramLink(main); } catch (error) { location.href = main; } };
+  document.getElementById('go').addEventListener('click', open);
+  if (!tg || !tg.initData) { out.innerHTML = row('Telegram', 'не найден: откройте ссылку в Telegram'); return; }
+  tg.ready();
+  tg.expand();
+  const start = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+  const lines = [row('Параметр ссылки', start || '(нет)'), row('Платформа', tg.platform), row('Версия', tg.version)];
+  const storage = tg.CloudStorage;
+  if (!storage) { out.innerHTML = lines.concat(row('Хранилище', 'нет CloudStorage')).join(''); return; }
+  storage.getKeys((error, keys) => {
+    lines.push(row('Ключи в хранилище', error ? `ошибка: ${error}` : (keys.length ? keys.join(', ') : '(пусто)')));
+    storage.setItem('gift_probe', `${start || '-'} ${new Date().toISOString()}`, (writeError, ok) => {
+      lines.push(row('Запись gift_probe', writeError ? `ошибка: ${writeError}` : ok ? 'записано' : 'нет'));
+      out.innerHTML = lines.join('');
+      if (start.startsWith('auto_')) setTimeout(open, 300);
+    });
+  });
+})();
+</script>
+</body>
+</html>
